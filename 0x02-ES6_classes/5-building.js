@@ -1,13 +1,10 @@
 export default class Building {
   constructor(sqrt) {
-    this.sqrt = sqrt;
+    this._sqrt = sqrt;
     this.evacuationWarningMessage();
   }
   get sqrt() {
     return this._sqrt;
-  }
-  set sqrt(value) {
-    this._sqrt = value;
   }
   evacuationWarningMessage() {
     if (this.constructor.name !== 'Building')
