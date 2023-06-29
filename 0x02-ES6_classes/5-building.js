@@ -6,6 +6,9 @@ export default class Building {
   get sqrt() {
     return this._sqrt;
   }
+  set sqrt(value) {
+    this._sqrt = value;
+  }
   evacuationWarningMessage() {
     if (this.constructor.name !== 'Building')
       throw new Error(
