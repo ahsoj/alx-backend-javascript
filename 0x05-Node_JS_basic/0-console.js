@@ -1,7 +1,11 @@
-#!/usr/bin/node
+/**
+ * use procss.stdout
+ * @param {*} arg
+ * @returns string
+ */
 
 function displayMessage(arg) {
-  process.stdout.write(arg);
+  console.log(arg);
 }
 
 module.exports = displayMessage;
