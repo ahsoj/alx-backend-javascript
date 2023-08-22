@@ -7,13 +7,13 @@ const app = http.createServer();
 
 const dbFile = process.argv[2] ?? '';
 
-const countStudents = (dataPath) =>
+const countStudents = (path) =>
   new Promise((resolve, reject) => {
-    if (!dataPath) {
+    if (!path) {
       reject(new Error('Cannot load the database'));
     }
-    if (dataPath) {
-      fs.readFile(dataPath, (err, data) => {
+    if (path) {
+      fs.readFile(path, (err, data) => {
         if (err) {
           reject(new Error('Cannot load the database'));
         }
