@@ -7,13 +7,13 @@ const app = http.createServer();
 
 const dbFile = process.argv[2] ?? '';
 
-const countStudents = (path) =>
+const countStudents = (dataPath) =>
   new Promise((resolve, reject) => {
-    if (!path) {
+    if (!dataPath) {
       reject(new Error('Cannot load the database'));
     }
-    if (path) {
-      fs.readFile(path, (err, data) => {
+    if (dataPath) {
+      fs.readFile(dataPath, (err, data) => {
         if (err) {
           reject(new Error('Cannot load the database'));
         }
@@ -60,40 +60,53 @@ const countStudents = (path) =>
     }
   });
 
+const Routehandlers = [
+  {
+    path: '/',
+    handler(_, res) {
+      const responseText = 'Hello Holberton School!';
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Length', responseText.length);
+      res.statusCode = 200;
+      res.write(Buffer.from(responseText));
+    },
+  },
+  {
+    path: '/students',
+    handler(_, res) {
+      const responseParts = ['This is the list of our students'];
+
+      countStudents(dbFile)
+        .then((report) => {
+          responseParts.push(report);
+          const responseText = responseParts.join('\n');
+          res.setHeader('Content-Type', 'text/plain');
+          res.setHeader('Content-Length', responseText.length);
+          res.statusCode = 200;
+          res.write(Buffer.from(responseText));
+        })
+        .catch((err) => {
+          responseParts.push(
+            err instanceof Error ? err.message : err.toString()
+          );
+          const responseText = responseParts.join('\n');
+          res.setHeader('Content-Type', 'text/plain');
+          res.setHeader('Content-Length', responseText.length);
+          res.statusCode = 200;
+          res.write(Buffer.from(responseText));
+        });
+    },
+  },
+];
+
 app.on('request', (req, res) => {
-  req.url === '/'
-    ? function handler(_, res) {
-        const responseText = 'Hello Holberton School!';
-
-        res.setHeader('Content-Type', 'text/plain');
-        res.setHeader('Content-Length', responseText.length);
-        res.statusCode = 200;
-        res.write(Buffer.from(responseText));
-      }
-    : req.url === '/students' &&
-      function handler(_, res) {
-        const responseParts = ['This is the list of our students'];
-
-        countStudents(dbFile)
-          .then((report) => {
-            responseParts.push(report);
-            const responseText = responseParts.join('\n');
-            res.setHeader('Content-Type', 'text/plain');
-            res.setHeader('Content-Length', responseText.length);
-            res.statusCode = 200;
-            res.write(Buffer.from(responseText));
-          })
-          .catch((err) => {
-            responseParts.push(
-              err instanceof Error ? err.message : err.toString()
-            );
-            const responseText = responseParts.join('\n');
-            res.setHeader('Content-Type', 'text/plain');
-            res.setHeader('Content-Length', responseText.length);
-            res.statusCode = 200;
-            res.write(Buffer.from(responseText));
-          });
-      };
+  for (const routeHandler of Routehandlers) {
+    if (routeHandler.path === '/') {
+      routeHandler.handler(req, res);
+      break;
+    }
+  }
 });
 
 app.listen(PORT, HOST, () => {
