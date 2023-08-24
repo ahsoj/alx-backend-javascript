@@ -1,11 +1,11 @@
-const http = require('http');
+const express = require('express');
 const fs = require('fs');
 
-const HOST = 'localhost';
 const PORT = 1245;
-const app = http.createServer();
 
-const dbFile = process.argv[2] ?? '';
+const dbFiles = process.argv.length > 2 ? process.argv[2] : '';
+
+const app = express();
 
 const countStudents = (dataPath) =>
   new Promise((resolve, reject) => {
@@ -18,11 +18,14 @@ const countStudents = (dataPath) =>
           reject(new Error('Cannot load the database'));
         }
         if (data) {
-          const reports = [];
+          const reportParts = [];
           const fileLines = data.toString('utf-8').trim().split('\n');
           const students = {};
-          const dbNames = fileLines[0].split(',');
-          const studentPropNames = dbNames.slice(0, dbNames.length - 1);
+          const dbFieldNames = fileLines[0].split(',');
+          const studentPropNames = dbFieldNames.slice(
+            0,
+            dbFieldNames.length - 1
+          );
 
           for (const line of fileLines.slice(1)) {
             const studentRecord = line.split(',');
@@ -44,9 +47,9 @@ const countStudents = (dataPath) =>
           const totalStudents = Object.values(students).reduce(
             (pre, cur) => (pre || []).length + cur.length
           );
-          reports.push(`Number of students: ${totalStudents}`);
+          reportParts.push(`Number of students: ${totalStudents}`);
           for (const [field, group] of Object.entries(students)) {
-            reports.push(
+            reportParts.push(
               [
                 `Number of students in ${field}: ${group.length}.`,
                 'List:',
@@ -54,62 +57,39 @@ const countStudents = (dataPath) =>
               ].join(' ')
             );
           }
-          resolve(reports.join('\n'));
+          resolve(reportParts.join('\n'));
         }
       });
     }
   });
 
-const Routehandlers = [
-  {
-    path: '/',
-    handler(_, res) {
-      const responseText = 'Hello Holberton School!';
+app.get('/', (_req, res) => {
+  res.send('Hello Holberton School!');
+});
 
+app.get('/students', (_req, res) => {
+  const response = ['This is the list of our students'];
+
+  countStudents(dbFiles)
+    .then((report) => {
+      response.push(report);
+      const responseText = response.join('\n');
       res.setHeader('Content-Type', 'text/plain');
       res.setHeader('Content-Length', responseText.length);
       res.statusCode = 200;
-      res.write(Buffer.from(responseText));
-    },
-  },
-  {
-    path: '/students',
-    handler(_, res) {
-      const responseParts = ['This is the list of our students'];
-
-      countStudents(dbFile)
-        .then((report) => {
-          responseParts.push(report);
-          const responseText = responseParts.join('\n');
-          res.setHeader('Content-Type', 'text/plain');
-          res.setHeader('Content-Length', responseText.length);
-          res.statusCode = 200;
-          res.write(Buffer.from(responseText));
-        })
-        .catch((err) => {
-          responseParts.push(
-            err instanceof Error ? err.message : err.toString()
-          );
-          const responseText = responseParts.join('\n');
-          res.setHeader('Content-Type', 'text/plain');
-          res.setHeader('Content-Length', responseText.length);
-          res.statusCode = 200;
-          res.write(responseText);
-        });
-    },
-  },
-];
-
-app.on('request', (req, res) => {
-  for (const routeHandler of Routehandlers) {
-    if (routeHandler.path === '/') {
-      routeHandler.handler(req, res);
-      break;
-    }
-  }
+      res.write(responseText);
+    })
+    .catch((err) => {
+      response.push(err instanceof Error ? err.message : err.toString());
+      const responseText = response.join('\n');
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Length', responseText.length);
+      res.statusCode = 200;
+      res.write(responseText);
+    });
 });
 
-app.listen(PORT, HOST, () => {
+app.listen(PORT, () => {
   console.log(`Server listening on http://${HOST}:${PORT}\n`);
 });
 
